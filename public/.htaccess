@@ -1,0 +1,54 @@
+DirectoryIndex index.html
+AddDefaultCharset UTF-8
+
+# --- MIME types -------------------------------------------------------------
+# Shared hosts sometimes serve .jpg as text/plain or application/octet-stream,
+# and WhatsApp then silently drops the preview image. Pin them explicitly.
+<IfModule mod_mime.c>
+  AddType image/jpeg .jpg .jpeg
+  AddType image/png .png
+  AddType image/svg+xml .svg
+  AddType image/x-icon .ico
+  AddType font/ttf .ttf
+  AddType font/woff2 .woff2
+  AddType application/xml .xml
+  AddType text/plain .txt
+</IfModule>
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # Never rewrite something that really exists, and never rewrite the preview
+  # assets: a crawler that receives HTML instead of an image shows no card.
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  RewriteRule ^og/ - [L]
+  RewriteRule ^(robots\.txt|sitemap\.xml|favicon\.ico)$ - [L]
+
+  RewriteRule ^ index.html [L]
+</IfModule>
+
+<IfModule mod_headers.c>
+  <FilesMatch "\.(js|css|png|gif|webp|svg|ico|mp4|ttf|woff2?)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+
+  # Preview images get re-fetched by crawlers: cacheable but fresh, and never
+  # blocked by a cross-origin or framing rule.
+  <FilesMatch "^og-.*\.(jpg|jpeg|png)$">
+    Header set Cache-Control "public, max-age=86400"
+    Header set Access-Control-Allow-Origin "*"
+    Header unset X-Frame-Options
+  </FilesMatch>
+
+  <FilesMatch "\.(html)$">
+    Header set Cache-Control "public, max-age=0, must-revalidate"
+  </FilesMatch>
+</IfModule>
+
+# Some shared hosts ship default hotlink protection, which blocks requests that
+# arrive without a Referer header - exactly how crawlers fetch. Nothing here
+# turns it on; leave it off in cPanel if you want link previews to work.
