@@ -1,0 +1,5 @@
+# DEMO SUBDOMAIN ONLY - do not upload this file to the production domain.
+# Keeps the pitch demo out of search results so it never competes with,
+# or gets mistaken for, the client's real site.
+User-agent: *
+Disallow: /
